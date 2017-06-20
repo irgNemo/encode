@@ -3,8 +3,7 @@
 
 import sys
 import glob
-import h5py
-import numpy
+#import numpy
 import sqlite3
 import math
 import re
@@ -21,8 +20,8 @@ def main(argv):
 
 def getArgs(argv):
 	parser = argparse.ArgumentParser();
-	parser.add_argument('--datasetsDirPath', help='Directorio de la ruta a la carpeta MATHResult', type=str, default="../datasets/DataEncode/");
-	parser.add_argument('--database', help='Nombre de la base de datos', type=str, default="encode.db");
+	parser.add_argument('-path','--datasetsDirPath', help='Directorio de la ruta a la carpeta con el dataset', type=str, default="../datasets/DataEncode/");
+	parser.add_argument('-db','--database', help='Nombre de la base de datos', type=str, default="encode.db");
 	return parser.parse_args(argv);
 '''	
 def loadDataFromTxtFiles(dirPath, conexion):
