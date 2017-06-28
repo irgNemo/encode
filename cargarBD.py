@@ -3,19 +3,23 @@
 
 import sys
 import glob
-#import numpy
 import sqlite3
 import math
 import re
 import argparse
 import csv
+import time
+
 
 def main(argv):
 	args = getArgs(argv);
 	conexion = crearConexion(args.database);
 	createDatabase(conexion);
+	start = time.time();
 	loadDataFromTxtFiles(args.datasetsDirPath, conexion);
-	#conexion.close();
+	end = time.time();
+	conexion.close();
+	print("Time elapsed: " + end - start);
 
 def getArgs(argv):
 	parser = argparse.ArgumentParser();
