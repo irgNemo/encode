@@ -42,7 +42,9 @@ def loadDataFromTxtFiles(dirPath, conexion):
 		reader = csv.reader(f);
 		tuplas = list();
 		for fila in reader:
-			fila += "," + cromosoma + "," + regionReguladora + "," + lineaCelular;
+			fila.append(cromosoma);
+			fila.append(regionReguladora);
+			fila.append(lineaCelular);
 			t = tuple(fila);
 			tuplas.append(t);
 
@@ -59,9 +61,11 @@ def createDatabase(conexion):
 
 
 	# Se crean índices para datos_locomocion para hacer más eficiente la consulta. Los nombres corresponden a las columnas de la BD. 
-	headerIndex =  ','.join(["{:d}".format(x) for x in range(400)]);
+	headerIndex =  ','.join(["'{:d}'".format(x) for x in range(400)]);
 	sqlIndex = "CREATE INDEX IF NOT EXISTS indices ON dato(" + headerIndex  + ", cromosoma, regionReguladora, lineaCelular);";
+	print(sqlIndex);
 	cursor.execute(sqlIndex);
+	
 	conexion.commit();
 	
 
