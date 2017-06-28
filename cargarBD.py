@@ -19,7 +19,7 @@ def main(argv):
 	loadDataFromTxtFiles(args.datasetsDirPath, conexion);
 	end = time.time();
 	conexion.close();
-	print("Time elapsed: " + end - start);
+	print("Time elapsed: " + str(end - start));
 
 def getArgs(argv):
 	parser = argparse.ArgumentParser();
@@ -37,6 +37,7 @@ def loadDataFromTxtFiles(dirPath, conexion):
 		cromosoma = matchObj.group(2);
 		regionReguladora = matchObj.group(3);
 		lineaCelular = matchObj.group(1);
+		coding = matchObj.group(4);
 		print (cromosoma + regionReguladora + lineaCelular);
 		f = open(filename);
 		reader = csv.reader(f);
@@ -45,10 +46,11 @@ def loadDataFromTxtFiles(dirPath, conexion):
 			fila.append(cromosoma);
 			fila.append(regionReguladora);
 			fila.append(lineaCelular);
+			fila.append(coding);
 			t = tuple(fila);
 			tuplas.append(t);
 
-		conexion.cursor().executemany('INSERT INTO dato VALUES(?' + (',?' * 399) + ',?,?,?)', tuplas);
+		conexion.cursor().executemany('INSERT INTO dato VALUES(?' + (',?' * 399) + ',?,?,?,?)', tuplas);
 		f.close();	
 		
 	conexion.commit();
@@ -56,14 +58,13 @@ def loadDataFromTxtFiles(dirPath, conexion):
 def createDatabase(conexion):
 	cursor = conexion.cursor()
 	header =  ','.join(["'{:d}' real".format(x) for x in range(400)]);
-	sql = "CREATE TABLE IF NOT EXISTS dato(" + header + ", cromosoma text, regionReguladora text, lineaCelular text);";
+	sql = "CREATE TABLE IF NOT EXISTS dato(" + header + ", cromosoma text, regionReguladora text, lineaCelular text, coding text);";
 	cursor.execute(sql);
 
 
 	# Se crean índices para datos_locomocion para hacer más eficiente la consulta. Los nombres corresponden a las columnas de la BD. 
 	headerIndex =  ','.join(["'{:d}'".format(x) for x in range(400)]);
-	sqlIndex = "CREATE INDEX IF NOT EXISTS indices ON dato(" + headerIndex  + ", cromosoma, regionReguladora, lineaCelular);";
-	print(sqlIndex);
+	sqlIndex = "CREATE INDEX IF NOT EXISTS indices ON dato(" + headerIndex  + ", cromosoma, regionReguladora, lineaCelular, coding);";
 	cursor.execute(sqlIndex);
 	
 	conexion.commit();
