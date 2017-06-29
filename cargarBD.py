@@ -19,7 +19,7 @@ def main(argv):
 	loadDataFromTxtFiles(args.datasetsDirPath, conexion);
 	end = time.time();
 	conexion.close();
-	print("Time elapsed: " + end - start);
+	print("Time elapsed: " + str(end - start));
 
 def getArgs(argv):
 	parser = argparse.ArgumentParser();
@@ -38,7 +38,6 @@ def loadDataFromTxtFiles(dirPath, conexion):
 		regionReguladora = matchObj.group(3);
 		lineaCelular = matchObj.group(1);
 		coding = matchObj.group(4);
-		todos = cromosoma + "," + regionReguladora + "," + lineaCelular;
 		f = open(filename);
 		reader = csv.reader(f);
 		tuplas = list();
@@ -49,7 +48,6 @@ def loadDataFromTxtFiles(dirPath, conexion):
 			fila.append(coding);
 			t = tuple(fila);
 			tuplas.append(t);
-		
 		conexion.cursor().executemany('INSERT INTO dato VALUES(?' + (',?' * 399) + ',?,?,?,?)', tuplas);
 		f.close();	
 		
@@ -62,10 +60,10 @@ def createDatabase(conexion):
 	cursor.execute(sql);
 
 	# Se crean índices para datos_locomocion para hacer más eficiente la consulta. Los nombres corresponden a las columnas de la BD. 
-	headerIndex =  ','.join(["{:d}".format(x) for x in range(400)]);
+	headerIndex =  ','.join(["'{:d}'".format(x) for x in range(400)]);
 	sqlIndex = "CREATE INDEX IF NOT EXISTS indices ON dato(" + headerIndex  + ", cromosoma, regionReguladora, lineaCelular, coding);";
 	cursor.execute(sqlIndex);
-
+	
 	conexion.commit();
 	
 
