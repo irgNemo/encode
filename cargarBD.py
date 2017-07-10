@@ -9,14 +9,15 @@ import re
 import argparse
 import csv
 import time
+import mysql.connector
 
 
 def main(argv):
 	args = getArgs(argv);
-	conexion = crearConexion(args.database);
-	createDatabase(conexion);
+	conexion = crearConexionMySQL(args.database);
+	createDatabaseMySQL(conexion);
 	start = time.time();
-	loadDataFromTxtFiles(args.datasetsDirPath, conexion);
+	loadDataFromTxtFilesMySQL(args.datasetsDirPath, conexion);
 	end = time.time();
 	conexion.close();
 	print("Time elapsed: " + str(end - start));
@@ -52,6 +53,33 @@ def loadDataFromTxtFiles(dirPath, conexion):
 		f.close();	
 		
 	conexion.commit();
+
+def loadDataFromTxtFilesMySQL(dirPath, conexion):
+
+	PATRON_DE_BUSQUEDA = "/([A-Za-z0-9]+)_Chromosome([0-9X]+)_RR(\d+)(NeighborJoining|Voss)Per.txt";
+	
+	for filename in glob.glob(dirPath +  "*_Chromosome*_RR*.txt"):
+		print(filename);
+		matchObj = re.search(PATRON_DE_BUSQUEDA, filename);
+		cromosoma = matchObj.group(2);
+		regionReguladora = matchObj.group(3);
+		lineaCelular = matchObj.group(1);
+		coding = matchObj.group(4);
+		header =  ','.join(["f{:d}".format(x) for x in range(400)]);
+		f = open(filename);
+		reader = csv.reader(f);
+		tuplas = list();
+		for fila in reader:
+			fila.append(cromosoma);
+			fila.append(regionReguladora);
+			fila.append(lineaCelular);
+			fila.append(coding);
+			t = tuple(fila);
+			tuplas.append(t);
+		conexion.cursor().executemany('INSERT INTO dato (' + header + ', cromosoma, regionReguladora, lineaCelular, coding) VALUES(%s' + (',%s' * 399) + ',%s,%s,%s,%s)', tuplas);
+		conexion.commit();
+		f.close();	
+		
 	
 def createDatabase(conexion):
 	cursor = conexion.cursor()
@@ -66,9 +94,26 @@ def createDatabase(conexion):
 	
 	conexion.commit();
 	
+def createDatabaseMySQL(conexion):
+	cursor = conexion.cursor(buffered=True);
+	header =  ','.join(["f{:d} float".format(x) for x in range(400)]);
+	sql = "CREATE TABLE IF NOT EXISTS dato(" + header + ", cromosoma varchar(20), regionReguladora varchar(20), lineaCelular varchar(20), coding varchar(20));";
+	cursor.execute(sql);
+
+	# Se crean índices para datos_locomocion para hacer más eficiente la consulta. Los nombres corresponden a las columnas de la BD. 
+	#headerIndex =  ','.join(["f{:d}".format(x) for x in range(400)]);
+	#sqlIndex = "CREATE INDEX IF NOT EXISTS indices ON dato(" + headerIndex  + ", cromosoma, regionReguladora, lineaCelular, coding);";
+	#cursor.execute(sqlIndex);
+	
+	conexion.commit();
 
 def crearConexion(nombre_basedatos):
 	return sqlite3.connect(nombre_basedatos);
+
+def crearConexionMySQL(nombre_basedatos):
+	return mysql.connector.connect(user='root', password='9821poa', database=nombre_basedatos);
+
+
 
 if __name__ == "__main__":
 	main(sys.argv[1:]);
