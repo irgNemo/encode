@@ -25,7 +25,7 @@ def main(argv):
 def getArgs(argv):
 	parser = argparse.ArgumentParser();
 	parser.add_argument('-path','--datasetsDirPath', help='Directorio de la ruta a la carpeta con el dataset', type=str, default="../datasets/DataENCODE/");
-	parser.add_argument('-db','--database', help='Nombre de la base de datos', type=str, default="encode.db");
+	parser.add_argument('-db','--database', help='Nombre de la base de datos', type=str, default="encode");
 	return parser.parse_args(argv);
 
 def loadDataFromTxtFiles(dirPath, conexion):

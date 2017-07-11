@@ -7,6 +7,7 @@ import sqlite3
 import sqlitebck
 import random
 import re
+import mysql.connector
 
 def obtenerConexion(database_name):
 	'''Regresa la conexion de la base de datos'''
@@ -17,12 +18,17 @@ def obtenerConexion(database_name):
 	#return conexion_en_memoria;
 	return conexion_en_disco;
 
+def obtenerConexionMySQL(database_name):
+	'''Regresa la conexion de la base de datos'''
+	conexion_en_disco = mysql.connector.connect(user='root', database=database_name, password='9821poa');
+	return conexion_en_disco;
+
 def obtenerArgs(argv):
     """Devuelve un objeto que tiene la información de los argumentos de línea de comandos"""	
     parser = argparse.ArgumentParser();
     parser.add_argument("-db", "--database", 
 			help="Nombre de la base de datos", 
-			type=str, default="encode.db");
+			type=str, default="encode");
     parser.add_argument("-niv", "--nivel",
                         help="nivel molecular de las muestras: cromosoma, lineaCelular, regionReguladora ",
                         type=str, default="cromosoma") 
@@ -41,23 +47,22 @@ def obtenerArgs(argv):
 
 def crearListaDatos(conexion, args):
 
-	consulta = "SELECT DISTINCT " + args.nivel + " FROM dato";
-	query = conexion.cursor().execute(consulta);
-	elementos = query.fetchall();
+	consultaNiveles = "SELECT DISTINCT " + args.nivel + " FROM dato";
+	query = conexion.cursor().execute(consultaNiveles);
+	niveles = query.fetchall();
 
 	if args.cardinalidad == 'OneToOne': # Aqui se construyen las comparaciones de uno contra uno de los elementos recuperados
 		listas = dict();
-		consulta = "SELECT * FROM dato where ";
-		for e1 in elementos:
-			query1 = conexion.cursor().execute(consulta + args.nivel + "=" + e1[0]);
-			elementos1 = query1.fetchall();
-			#print(elementos1);
-			for e2 in elementos:
-				print(e2[0]);
-				if e1[0] == e2[0]:
-					break;
-				query2 = conexion.cursor().execute(consulta + args.nivel + "=" + e2[0]);
-				elementos2 = query2.fetchall();
+		consultaElementos = "SELECT * FROM dato where ";
+		for registro1  in niveles:
+			consultaRegistrosPorNivel = conexion.cursor().execute(consultaElementos + args.nivel + "=" + registro1[0]);
+			registrosPorNivel = consultaRegistrosPorNivel.fetchall();
+			for registro1 in registrosPorNivel:
+				for registro2 in registroPorNivel:
+					if e1[0] == e2[0]:
+						break;
+					query2 = conexion.cursor().execute(consulta + args.nivel + "=" + e2[0]);
+					elementos2 = query2.fetchall();
 		
 		if elementos1 and elementos2:
 			if not listas_key(e1[0]):
