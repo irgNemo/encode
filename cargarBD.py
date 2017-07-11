@@ -10,17 +10,18 @@ import argparse
 import csv
 import time
 import mysql.connector
+from mysql.connector import errorcode
 
 
 def main(argv):
 	args = getArgs(argv);
 	conexion = crearConexionMySQL(args.database);
-	createDatabaseMySQL(conexion);
+	#createDatabaseMySQL(conexion);
 	start = time.time();
-	loadDataFromTxtFilesMySQL(args.datasetsDirPath, conexion);
+	#loadDataFromTxtFilesMySQL(args.datasetsDirPath, conexion);
 	end = time.time();
 	conexion.close();
-	print("Time elapsed: " + str(end - start));
+	print("Time elapsed: " + str(( (end - start) / 60 ) / 60 ) + " hrs");
 
 def getArgs(argv):
 	parser = argparse.ArgumentParser();
@@ -99,20 +100,20 @@ def createDatabaseMySQL(conexion):
 	header =  ','.join(["f{:d} float".format(x) for x in range(400)]);
 	sql = "CREATE TABLE IF NOT EXISTS dato(" + header + ", cromosoma varchar(20), regionReguladora varchar(20), lineaCelular varchar(20), coding varchar(20));";
 	cursor.execute(sql);
-
-	# Se crean índices para datos_locomocion para hacer más eficiente la consulta. Los nombres corresponden a las columnas de la BD. 
-	#headerIndex =  ','.join(["f{:d}".format(x) for x in range(400)]);
-	#sqlIndex = "CREATE INDEX IF NOT EXISTS indices ON dato(" + headerIndex  + ", cromosoma, regionReguladora, lineaCelular, coding);";
-	#cursor.execute(sqlIndex);
-	
 	conexion.commit();
 
 def crearConexion(nombre_basedatos):
 	return sqlite3.connect(nombre_basedatos);
 
 def crearConexionMySQL(nombre_basedatos):
-	return mysql.connector.connect(user='root', password='9821poa', database=nombre_basedatos);
-
+	try:
+		con = mysql.connector.connect(user='root', password='9821poa', database=nombre_basedatos);
+	except mysql.connector.Error as err:
+		print("Error en la conexion: {}".format(err));
+		con = mysql.connector.connect(user='root', password='9821poa');
+		con.cursor().execute('CREATE DATABASE ' + nombre_basedatos);
+		con.cursor().execute('USE ' + nombre_basedatos);
+	return con; 
 
 
 if __name__ == "__main__":
