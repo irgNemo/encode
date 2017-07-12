@@ -16,9 +16,9 @@ from mysql.connector import errorcode
 def main(argv):
 	args = getArgs(argv);
 	conexion = crearConexionMySQL(args.database);
-	#createDatabaseMySQL(conexion);
+	createDatabaseMySQL(conexion);
 	start = time.time();
-	#loadDataFromTxtFilesMySQL(args.datasetsDirPath, conexion);
+	loadDataFromTxtFilesMySQL(args.datasetsDirPath, conexion);
 	end = time.time();
 	conexion.close();
 	print("Time elapsed: " + str(( (end - start) / 60 ) / 60 ) + " hrs");
@@ -78,8 +78,9 @@ def loadDataFromTxtFilesMySQL(dirPath, conexion):
 			t = tuple(fila);
 			tuplas.append(t);
 		conexion.cursor().executemany('INSERT INTO dato (' + header + ', cromosoma, regionReguladora, lineaCelular, coding) VALUES(%s' + (',%s' * 399) + ',%s,%s,%s,%s)', tuplas);
-		conexion.commit();
-		f.close();	
+		f.close();
+
+	conexion.commit();
 		
 	
 def createDatabase(conexion):
@@ -106,6 +107,7 @@ def crearConexion(nombre_basedatos):
 	return sqlite3.connect(nombre_basedatos);
 
 def crearConexionMySQL(nombre_basedatos):
+	con = None;
 	try:
 		con = mysql.connector.connect(user='root', password='9821poa', database=nombre_basedatos);
 	except mysql.connector.Error as err:
@@ -113,6 +115,7 @@ def crearConexionMySQL(nombre_basedatos):
 		con = mysql.connector.connect(user='root', password='9821poa');
 		con.cursor().execute('CREATE DATABASE ' + nombre_basedatos);
 		con.cursor().execute('USE ' + nombre_basedatos);
+	con.cursor().execute('set global max_allowed_packet=1000000000');
 	return con; 
 
 
