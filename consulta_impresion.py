@@ -47,32 +47,48 @@ def obtenerArgs(argv):
 
 def crearListaDatos(conexion, args):
 
-	consultaNiveles = "SELECT DISTINCT " + args.nivel + " FROM dato";
-	query = conexion.cursor().execute(consultaNiveles);
-	niveles = query.fetchall();
+	consultaNiveles = "SELECT DISTINCT " + args.nivel + " FROM dato;";
+	resultNiveles = conexion.cursor().execute(consultaNiveles);
+	niveles = resultNiveles.fetchall();
+
 
 	if args.cardinalidad == 'OneToOne': # Aqui se construyen las comparaciones de uno contra uno de los elementos recuperados
 		listas = dict();
 		consultaElementos = "SELECT * FROM dato where ";
-		for registro1  in niveles:
-			consultaRegistrosPorNivel = conexion.cursor().execute(consultaElementos + args.nivel + "=" + registro1[0]);
-			registrosPorNivel = consultaRegistrosPorNivel.fetchall();
-			for registro1 in registrosPorNivel:
-				for registro2 in registroPorNivel:
-					if e1[0] == e2[0]:
-						break;
-					query2 = conexion.cursor().execute(consulta + args.nivel + "=" + e2[0]);
-					elementos2 = query2.fetchall();
+		for i in range(len(niveles)):
+			#consultaRegistrosPorNivel = conexion.cursor().execute(consultaElementos + args.nivel + "=" + niveles[i][0]);
+			#registrosPorNivel = consultaRegistrosPorNivel.fetchall();
+			for j in range(i,len(niveles)):
+				if i == j:
+					break;
+				#consultaPorNivel2 = conexion.cursor().execute(consulta + args.nivel + "=" + niveles[j][0]);
+				#registrosPorNivel2 = consultaPorNivel2.fetchall();
+				print(niveles[i] + ":" + niveles[j]);
 		
-		if elementos1 and elementos2:
-			if not listas_key(e1[0]):
-				listas[e1[0]] = dict();
-			listas[e1[0]][e2[0]] = elementos1 + elementos2;
+		#if elementos1 and elementos2:
+		#	if not listas_key(e1[0]):
+		#		listas[e1[0]] = dict();
+		#	listas[e1[0]][e2[0]] = elementos1 + elementos2;
 	
 	elif args.cardinalidad == 'OneToMany': # Aqui se construyen las comparacinoes de uno contra todos de los elementos recuperados
 		print(args.cardinalidad);
 
 
+def crearCSV(registros):
+	for tupla in registros: 
+		tuplaStr = re.sub('[ ()\']', '', str(tupla));
+		tuplaStr = re.sub('None','?',tuplaStr);	
+		print (tuplaStr);
+def main(argv):
+	'''Entrada al programa'''
+	args = obtenerArgs(argv);
+	conexion = obtenerConexionMySQL(args.database);
+	crearListaDatos(conexion, args);
+	#if args.randomize:
+	#	random.shuffle(registros);
+	#print(",".join(cabecera));
+	#crearCSV(registros);
+	conexion.close();
 
 '''	
 	subConsulta = "(SELECT nombre_registro FROM sujeto WHERE tipoSujeto = ";
@@ -164,21 +180,6 @@ def crearListaDatos(conexion, args):
 
 	return registros, cabeceraLista;
 '''
-def crearCSV(registros):
-	for tupla in registros: 
-		tuplaStr = re.sub('[ ()\']', '', str(tupla));
-		tuplaStr = re.sub('None','?',tuplaStr);	
-		print (tuplaStr);
-def main(argv):
-	'''Entrada al programa'''
-	args = obtenerArgs(argv);
-	conexion = obtenerConexion(args.database);
-	crearListaDatos(conexion, args);
-	#if args.randomize:
-	#	random.shuffle(registros);
-	#print(",".join(cabecera));
-	#crearCSV(registros);
-	#conexion.close();
 
 if __name__ == "__main__":
 	main(sys.argv[1:]);
