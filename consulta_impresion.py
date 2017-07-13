@@ -8,15 +8,9 @@ import sqlitebck
 import random
 import re
 import mysql.connector
+import csv
+import time
 
-def obtenerConexion(database_name):
-	'''Regresa la conexion de la base de datos'''
-	conexion_en_disco = sqlite3.connect(database_name);
-	#conexion_en_memoria = sqlite3.connect(":memory:");
-	#sqlitebck.copy(conexion_en_disco, conexion_en_memoria);
-	#conexion_en_disco.close();
-	#return conexion_en_memoria;
-	return conexion_en_disco;
 
 def obtenerConexionMySQL(database_name):
 	'''Regresa la conexion de la base de datos'''
@@ -33,8 +27,8 @@ def obtenerArgs(argv):
                         help="nivel molecular de las muestras: cromosoma, lineaCelular, regionReguladora ",
                         type=str, default="cromosoma") 
     parser.add_argument("-c", "--coding",
-                        help="Tipo de codificacion que se quiere analizar: v->voss, n->NeighborJoining",
-                        type=str, default="v") 
+                        help="Tipo de codificacion que se quiere analizar: voss, neighborJoining",
+                        type=str, default="voss") 
     parser.add_argument("-car", "--cardinalidad",
                         help="Cardinalidad para crear los archivos: OneToOne, OneToMany",
                         type=str, nargs="+",
@@ -46,49 +40,60 @@ def obtenerArgs(argv):
 
 
 def crearListaDatos(conexion, args):
+	consultaNiveles = "SELECT DISTINCT " + args.nivel + " FROM dato"; # tomara mucho tiempo la consulta, deberemos sustituirlo por una lista
+	cursor = conexion.cursor(buffered=True);
+	cursor.execute(consultaNiveles);
+	niveles = cursor.fetchall();
+	listas = dict();
+	header = ','.join(["f{:d}".format(x) for x in range(400)]);
+	probabilidad = 0.25
+	
 
-	consultaNiveles = "SELECT DISTINCT " + args.nivel + " FROM dato;";
-	resultNiveles = conexion.cursor().execute(consultaNiveles);
-	niveles = resultNiveles.fetchall();
-
-
-	if args.cardinalidad == 'OneToOne': # Aqui se construyen las comparaciones de uno contra uno de los elementos recuperados
-		listas = dict();
-		consultaElementos = "SELECT * FROM dato where ";
+	if args.cardinalidad == 'OneToOne': # Aqui se construyen las comparaciones de uno contra uno de los elementos recuperado
+		header = header + "," + args.nivel;
+		consultaElementos = "SELECT "+ header + " FROM dato WHERE " + args.nivel + "=%s AND coding = %s AND RAND()<=%s LIMIT %s";
 		for i in range(len(niveles)):
-			#consultaRegistrosPorNivel = conexion.cursor().execute(consultaElementos + args.nivel + "=" + niveles[i][0]);
-			#registrosPorNivel = consultaRegistrosPorNivel.fetchall();
+			cursor.execute(consultaElementos, (str(niveles[i][0]), args.coding, probabilidad, int(args.tamanioMuestra)));
+			registros1 = cursor.fetchall();
+			registros1.insert(0,tuple(header.split(',')));
+			if niveles[i][0] not in listas:
+				listas[niveles[i][0]] = dict();
 			for j in range(i,len(niveles)):
 				if i == j:
-					break;
-				#consultaPorNivel2 = conexion.cursor().execute(consulta + args.nivel + "=" + niveles[j][0]);
-				#registrosPorNivel2 = consultaPorNivel2.fetchall();
-				print(niveles[i] + ":" + niveles[j]);
+					continue;
+				cursor.execute(consultaElementos, (str(niveles[j][0]), args.coding, probabilidad, int(args.tamanioMuestra)));
+				registros2 = cursor.fetchall();
+				if niveles[j][0] not in listas[niveles[i][0]]:
+					listas[niveles[i][0]][niveles[j][0]] = None;
+			
+				listas[niveles[i][0]][niveles[j][0]] = registros1 + registros2;
+				print(niveles[i][0] + "-" + niveles[j][0]);
 		
-		#if elementos1 and elementos2:
-		#	if not listas_key(e1[0]):
-		#		listas[e1[0]] = dict();
-		#	listas[e1[0]][e2[0]] = elementos1 + elementos2;
-	
 	elif args.cardinalidad == 'OneToMany': # Aqui se construyen las comparacinoes de uno contra todos de los elementos recuperados
 		print(args.cardinalidad);
-
+	
+	return listas;
 
 def crearCSV(registros):
-	for tupla in registros: 
-		tuplaStr = re.sub('[ ()\']', '', str(tupla));
-		tuplaStr = re.sub('None','?',tuplaStr);	
-		print (tuplaStr);
+	for e1 in registros.keys():
+		for e2 in registros[e1]:
+			ofile = open(e1 + "-" + e2 + ".csv" , "w");
+			writer = csv.writer(ofile);
+			print("Escribiendo archivo en disco: " + e1 + "-" + e2);
+			for row in registros[e1][e2]:
+				writer.writerow(row);
+			ofile.close();
+
 def main(argv):
 	'''Entrada al programa'''
 	args = obtenerArgs(argv);
 	conexion = obtenerConexionMySQL(args.database);
-	crearListaDatos(conexion, args);
-	#if args.randomize:
-	#	random.shuffle(registros);
-	#print(",".join(cabecera));
-	#crearCSV(registros);
+	start = time.time();
+	registros=crearListaDatos(conexion, args);
+	crearCSV(registros);
+	end = time.time();
 	conexion.close();
+	print("Tiempo transcurrido: " + str(((end - start) / 60) /60 ) + " hrs")
 
 '''	
 	subConsulta = "(SELECT nombre_registro FROM sujeto WHERE tipoSujeto = ";
