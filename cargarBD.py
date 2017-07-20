@@ -3,7 +3,6 @@
 
 import sys
 import glob
-import sqlite3
 import math
 import re
 import argparse
@@ -29,32 +28,6 @@ def getArgs(argv):
 	parser.add_argument('-db','--database', help='Nombre de la base de datos', type=str, default="encode");
 	return parser.parse_args(argv);
 
-def loadDataFromTxtFiles(dirPath, conexion):
-
-	PATRON_DE_BUSQUEDA = "/([A-Za-z0-9]+)_Chromosome([0-9X]+)_RR(\d+)(NeighborJoining|Voss)Per.txt";
-	
-	for filename in glob.glob(dirPath +  "*_Chromosome*_RR*.txt"):
-		print(filename);
-		matchObj = re.search(PATRON_DE_BUSQUEDA, filename);
-		cromosoma = matchObj.group(2);
-		regionReguladora = matchObj.group(3);
-		lineaCelular = matchObj.group(1);
-		coding = matchObj.group(4);
-		f = open(filename);
-		reader = csv.reader(f);
-		tuplas = list();
-		for fila in reader:
-			fila.append(cromosoma);
-			fila.append(regionReguladora);
-			fila.append(lineaCelular);
-			fila.append(coding);
-			t = tuple(fila);
-			tuplas.append(t);
-		conexion.cursor().executemany('INSERT INTO dato VALUES(?' + (',?' * 399) + ',?,?,?,?)', tuplas);
-		f.close();	
-		
-	conexion.commit();
-
 def loadDataFromTxtFilesMySQL(dirPath, conexion):
 
 	PATRON_DE_BUSQUEDA = "/([A-Za-z0-9]+)_Chromosome([0-9X]+)_RR(\d+)(NeighborJoining|Voss)Per.txt";
@@ -79,22 +52,8 @@ def loadDataFromTxtFilesMySQL(dirPath, conexion):
 			tuplas.append(t);
 		conexion.cursor().executemany('INSERT INTO dato (' + header + ', cromosoma, regionReguladora, lineaCelular, coding) VALUES(%s' + (',%s' * 399) + ',%s,%s,%s,%s)', tuplas);
 		f.close();
-
-	conexion.commit();
+		conexion.commit();
 		
-	
-def createDatabase(conexion):
-	cursor = conexion.cursor()
-	header =  ','.join(["'{:d}' real".format(x) for x in range(400)]);
-	sql = "CREATE TABLE IF NOT EXISTS dato(" + header + ", cromosoma text, regionReguladora text, lineaCelular text, coding text);";
-	cursor.execute(sql);
-
-	# Se crean índices para datos_locomocion para hacer más eficiente la consulta. Los nombres corresponden a las columnas de la BD. 
-	headerIndex =  ','.join(["'{:d}'".format(x) for x in range(400)]);
-	sqlIndex = "CREATE INDEX IF NOT EXISTS indices ON dato(" + headerIndex  + ", cromosoma, regionReguladora, lineaCelular, coding);";
-	cursor.execute(sqlIndex);
-	
-	conexion.commit();
 	
 def createDatabaseMySQL(conexion):
 	cursor = conexion.cursor(buffered=True);
@@ -102,9 +61,6 @@ def createDatabaseMySQL(conexion):
 	sql = "CREATE TABLE IF NOT EXISTS dato(" + header + ", cromosoma varchar(20), regionReguladora varchar(20), lineaCelular varchar(20), coding varchar(20));";
 	cursor.execute(sql);
 	conexion.commit();
-
-def crearConexion(nombre_basedatos):
-	return sqlite3.connect(nombre_basedatos);
 
 def crearConexionMySQL(nombre_basedatos):
 	con = None;
