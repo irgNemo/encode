@@ -3,14 +3,12 @@
 
 import sys;
 import argparse;
-import sqlite3
-import sqlitebck
 import random
 import re
 import mysql.connector
 import csv
 import time
-
+import os
 
 def obtenerConexionMySQL(database_name):
 	'''Regresa la conexion de la base de datos'''
@@ -38,7 +36,7 @@ def obtenerArgs(argv):
 			type=str, default="400");
     parser.add_argument("-p", "--probabilidad",
 			help="Probabilidad de ser seleccionado como instancia en la muestra",
-			type=float, default="0.05");
+			type=float, default="0.002");
     return parser.parse_args(argv);
 
 
@@ -76,10 +74,13 @@ def crearListaDatos(conexion, args):
 	
 	return listas;
 
-def crearCSV(registros):
+def crearCSV(registros, nivel, coding):
+	path = "./" + coding + "/" + nivel + "/";
+	if not os.path.exists(path):
+		os.makedirs(path);
 	for e1 in registros.keys():
 		for e2 in registros[e1]:
-			ofile = open(e1 + "-" + e2 + ".csv" , "w");
+			ofile = open(path + e1 + "-" + e2 + ".csv" , "w");
 			writer = csv.writer(ofile);
 			print("Escribiendo archivo en disco: " + e1 + "-" + e2);
 			for row in registros[e1][e2]:
@@ -92,10 +93,10 @@ def main(argv):
 	conexion = obtenerConexionMySQL(args.database);
 	start = time.time();
 	registros=crearListaDatos(conexion, args);
-	crearCSV(registros);
+	crearCSV(registros, args.nivel, args.coding);
 	end = time.time();
 	conexion.close();
-	print("Tiempo transcurrido: " + str(((end - start) / 60)) + " min")
+	print("Tiempo transcurrido: " + str(((end - start) / 60)) + " min");
 
 if __name__ == "__main__":
 	main(sys.argv[1:]);
